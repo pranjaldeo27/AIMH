@@ -5,9 +5,12 @@ from openai import OpenAI
 from google import genai as google_genai
 import re
 import time
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 SPREADSHEET_ID = "1JQ1mNj4BhGHCjHSxbjtCsZDHaGj6NwzKWfn4TxD_S5Q"
-CREDENTIALS_FILE = "/Users/pranjaldeo/google_credentials.json"
+CREDENTIALS_FILE = str(REPO_ROOT / "google_credentials.json")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
@@ -66,11 +69,18 @@ def ask_gpt_response(vignette):
 
 
 def ask_gemini_response(vignette):
-    response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=vignette
-    )
-    return response.text.strip()
+    for attempt in range(5):
+        try:
+            response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=vignette
+            )
+            return response.text.strip()
+        except Exception as e:
+            wait = 15 * (attempt + 1)
+            print(f"    Gemini error (attempt {attempt+1}/5): {e}. Retrying in {wait}s...")
+            time.sleep(wait)
+    return "Error: Gemini unavailable after retries"
 
 
 def ask_fireworks_response(vignette, model):
@@ -224,87 +234,102 @@ def ask_gpt_stigma(vignette, question):
     return score, reason
 
 
-# --- Step 1: Vignette Prep & Appropriateness tab ---
-print("=== Step 1: Getting chatbot responses ===")
-prep_sheet = spreadsheet.worksheet("Vignette Prep & Appropriateness")
-prep_rows = prep_sheet.get_all_values()
+def run_step1():
+    print("=== Step 1: Getting chatbot responses ===")
+    prep_sheet = spreadsheet.worksheet("Vignette Prep & Appropriateness")
+    prep_rows = prep_sheet.get_all_values()
 
-for i, row in enumerate(prep_rows[2:], start=3):
-    vignette = row[1].strip() if len(row) > 1 else ""
-    if not vignette:
-        continue
-    if len(row) > 7 and row[7].strip():
-        print(f"Row {i}: already done, skipping")
-        continue
-    print(f"Row {i}: {vignette[:60]}")
+    for i, row in enumerate(prep_rows[2:], start=3):
+        vignette = row[1].strip() if len(row) > 1 else ""
+        if not vignette:
+            continue
+        if len(row) > 7 and row[7].strip():
+            print(f"Row {i}: already done, skipping")
+            continue
+        print(f"Row {i}: {vignette[:60]}")
 
-    claude_resp = ask_claude_response(vignette)
-    prep_sheet.update_cell(i, 8, claude_resp)
-    print(f"  Claude -> written to col 8")
-    time.sleep(2)
-
-    gpt_resp = ask_gpt_response(vignette)
-    prep_sheet.update_cell(i, 9, gpt_resp)
-    print(f"  GPT -> written to col 9")
-    time.sleep(2)
-
-    gemini_resp = ask_gemini_response(vignette)
-    prep_sheet.update_cell(i, 10, gemini_resp)
-    print(f"  Gemini -> written to col 10")
-    time.sleep(2)
-
-    glm_resp = ask_fireworks_response(vignette, "accounts/fireworks/models/glm-5p2")
-    prep_sheet.update_cell(i, 11, glm_resp)
-    print(f"  GLM -> written to col 11")
-    time.sleep(2)
-
-    qwen_resp = ask_fireworks_response(vignette, "accounts/fireworks/models/qwen3p7-plus")
-    prep_sheet.update_cell(i, 12, qwen_resp)
-    print(f"  Qwen -> written to col 12")
-    time.sleep(2)
-
-# --- Step 2: Stigma related questions tab ---
-print("\n=== Step 2: Asking stigma questions ===")
-stigma_sheet = spreadsheet.worksheet("Stigma related questions")
-stigma_rows = stigma_sheet.get_all_values()
-
-for i, row in enumerate(stigma_rows[2:], start=3):
-    vignette = row[1].strip() if len(row) > 1 else ""
-    if not vignette:
-        continue
-    if len(row) > 2 and row[2].strip():
-        print(f"Row {i}: already done, skipping")
-        continue
-    print(f"Row {i}: {vignette[:60]}")
-    for q_num, (question, claude_col, claude_reason_col, gpt_col, gpt_reason_col, gemini_col, gemini_reason_col, glm_col, glm_reason_col, qwen_col, qwen_reason_col) in enumerate(STIGMA_QUESTIONS, start=1):
-        claude_score, claude_reason = ask_claude_stigma(vignette, question)
-        safe_update(stigma_sheet, i,claude_col, claude_score)
-        safe_update(stigma_sheet, i,claude_reason_col, claude_reason)
-        print(f"  Q{q_num} -> Claude: {claude_score}")
+        claude_resp = ask_claude_response(vignette)
+        prep_sheet.update_cell(i, 8, claude_resp)
+        print(f"  Claude -> written to col 8")
         time.sleep(2)
 
-        gpt_score, gpt_reason = ask_gpt_stigma(vignette, question)
-        safe_update(stigma_sheet, i,gpt_col, gpt_score)
-        safe_update(stigma_sheet, i,gpt_reason_col, gpt_reason)
-        print(f"  Q{q_num} -> GPT: {gpt_score}")
+        gpt_resp = ask_gpt_response(vignette)
+        prep_sheet.update_cell(i, 9, gpt_resp)
+        print(f"  GPT -> written to col 9")
         time.sleep(2)
 
-        gemini_score, gemini_reason = ask_gemini_stigma(vignette, question)
-        safe_update(stigma_sheet, i,gemini_col, gemini_score)
-        safe_update(stigma_sheet, i,gemini_reason_col, gemini_reason)
-        print(f"  Q{q_num} -> Gemini: {gemini_score}")
+        gemini_resp = ask_gemini_response(vignette)
+        prep_sheet.update_cell(i, 10, gemini_resp)
+        print(f"  Gemini -> written to col 10")
         time.sleep(2)
 
-        glm_score, glm_reason = ask_fireworks_stigma(vignette, question, "accounts/fireworks/models/glm-5p2")
-        safe_update(stigma_sheet, i,glm_col, glm_score)
-        safe_update(stigma_sheet, i,glm_reason_col, glm_reason)
-        print(f"  Q{q_num} -> GLM: {glm_score}")
+        glm_resp = ask_fireworks_response(vignette, "accounts/fireworks/models/glm-5p2")
+        prep_sheet.update_cell(i, 11, glm_resp)
+        print(f"  GLM -> written to col 11")
         time.sleep(2)
 
-        qwen_score, qwen_reason = ask_fireworks_stigma(vignette, question, "accounts/fireworks/models/qwen3p7-plus")
-        safe_update(stigma_sheet, i,qwen_col, qwen_score)
-        safe_update(stigma_sheet, i,qwen_reason_col, qwen_reason)
-        print(f"  Q{q_num} -> Qwen: {qwen_score}")
+        qwen_resp = ask_fireworks_response(vignette, "accounts/fireworks/models/qwen3p7-plus")
+        prep_sheet.update_cell(i, 12, qwen_resp)
+        print(f"  Qwen -> written to col 12")
         time.sleep(2)
 
-print("\nAll done.")
+    print("\nStep 1 done.")
+
+
+def run_step2():
+    print("\n=== Step 2: Asking stigma questions ===")
+    stigma_sheet = spreadsheet.worksheet("Stigma related questions")
+    stigma_rows = stigma_sheet.get_all_values()
+
+    for i, row in enumerate(stigma_rows[2:], start=3):
+        vignette = row[1].strip() if len(row) > 1 else ""
+        if not vignette:
+            continue
+        if len(row) > 2 and row[2].strip():
+            print(f"Row {i}: already done, skipping")
+            continue
+        print(f"Row {i}: {vignette[:60]}")
+        for q_num, (question, claude_col, claude_reason_col, gpt_col, gpt_reason_col, gemini_col, gemini_reason_col, glm_col, glm_reason_col, qwen_col, qwen_reason_col) in enumerate(STIGMA_QUESTIONS, start=1):
+            claude_score, claude_reason = ask_claude_stigma(vignette, question)
+            safe_update(stigma_sheet, i, claude_col, claude_score)
+            safe_update(stigma_sheet, i, claude_reason_col, claude_reason)
+            print(f"  Q{q_num} -> Claude: {claude_score}")
+            time.sleep(2)
+
+            gpt_score, gpt_reason = ask_gpt_stigma(vignette, question)
+            safe_update(stigma_sheet, i, gpt_col, gpt_score)
+            safe_update(stigma_sheet, i, gpt_reason_col, gpt_reason)
+            print(f"  Q{q_num} -> GPT: {gpt_score}")
+            time.sleep(2)
+
+            gemini_score, gemini_reason = ask_gemini_stigma(vignette, question)
+            safe_update(stigma_sheet, i, gemini_col, gemini_score)
+            safe_update(stigma_sheet, i, gemini_reason_col, gemini_reason)
+            print(f"  Q{q_num} -> Gemini: {gemini_score}")
+            time.sleep(2)
+
+            glm_score, glm_reason = ask_fireworks_stigma(vignette, question, "accounts/fireworks/models/glm-5p2")
+            safe_update(stigma_sheet, i, glm_col, glm_score)
+            safe_update(stigma_sheet, i, glm_reason_col, glm_reason)
+            print(f"  Q{q_num} -> GLM: {glm_score}")
+            time.sleep(2)
+
+            qwen_score, qwen_reason = ask_fireworks_stigma(vignette, question, "accounts/fireworks/models/qwen3p7-plus")
+            safe_update(stigma_sheet, i, qwen_col, qwen_score)
+            safe_update(stigma_sheet, i, qwen_reason_col, qwen_reason)
+            print(f"  Q{q_num} -> Qwen: {qwen_score}")
+            time.sleep(2)
+
+    print("\nStep 2 done.")
+
+
+if __name__ == "__main__":
+    import sys
+    if "--step1" in sys.argv:
+        run_step1()
+    elif "--step2" in sys.argv:
+        run_step2()
+    else:
+        run_step1()
+        run_step2()
+    print("\nAll done.")

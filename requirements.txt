@@ -1,0 +1,9 @@
+gspread
+google-auth
+google-genai
+anthropic
+openai
+pandas
+numpy
+scipy
+matplotlib
