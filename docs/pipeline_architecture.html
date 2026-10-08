@@ -1,0 +1,368 @@
+<title>Pipeline Architecture — Stigma Vignette Study</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --paper:#EEF0ED;
+    --ink:#1B2320;
+    --ink-soft:#4B5650;
+    --line:#CDD3C9;
+    --card:#F8F9F6;
+    --structure:#2F4A45;
+    --structure-soft:#3F5F59;
+    --human:#7A3242;
+    --grid: rgba(27,35,32,.055);
+    --shadow: rgba(27,35,32,.10);
+
+    --p-claude:#8B4A52;
+    --p-gpt:#4C7A6B;
+    --p-gemini:#4A6A8B;
+    --p-glm:#8B7A42;
+    --p-qwen:#70548B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#14170F; --ink:#E7E9E2; --ink-soft:#A9B2A9; --line:#2B2F27; --card:#1B1F18;
+      --structure:#6FA399; --structure-soft:#5A8A80; --human:#C97B86;
+      --grid: rgba(255,255,255,.045); --shadow: rgba(0,0,0,.45);
+      --p-claude:#C98B92; --p-gpt:#7FAE9D; --p-gemini:#7D9FC4; --p-glm:#C4AF6E; --p-qwen:#A787C4;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#14170F; --ink:#E7E9E2; --ink-soft:#A9B2A9; --line:#2B2F27; --card:#1B1F18;
+    --structure:#6FA399; --structure-soft:#5A8A80; --human:#C97B86;
+    --grid: rgba(255,255,255,.045); --shadow: rgba(0,0,0,.45);
+    --p-claude:#C98B92; --p-gpt:#7FAE9D; --p-gemini:#7D9FC4; --p-glm:#C4AF6E; --p-qwen:#A787C4;
+  }
+  :root[data-theme="light"]{
+    --paper:#EEF0ED; --ink:#1B2320; --ink-soft:#4B5650; --line:#CDD3C9; --card:#F8F9F6;
+    --structure:#2F4A45; --structure-soft:#3F5F59; --human:#7A3242;
+    --grid: rgba(27,35,32,.055); --shadow: rgba(27,35,32,.10);
+    --p-claude:#8B4A52; --p-gpt:#4C7A6B; --p-gemini:#4A6A8B; --p-glm:#8B7A42; --p-qwen:#70548B;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background-color:var(--paper);
+    background-image: radial-gradient(var(--grid) 1.1px, transparent 1.1px);
+    background-size: 20px 20px;
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .wrap{max-width:800px;margin:0 auto;padding:60px 24px 84px;}
+
+  .eyebrow{
+    font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--structure-soft);text-align:center;
+  }
+  h1{
+    font-size:clamp(26px,4vw,34px);font-weight:760;letter-spacing:-.01em;
+    margin:8px 0 10px;text-align:center;text-wrap:balance;
+  }
+  .lede{
+    color:var(--ink-soft);font-size:14.5px;line-height:1.6;
+    max-width:58ch;margin:0 auto 56px;text-align:center;
+  }
+
+  .flow{display:flex;flex-direction:column;align-items:center;}
+
+  /* ---------- shared stage shell ---------- */
+  .stage{
+    width:100%;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:26px 28px;box-shadow:0 2px 10px var(--shadow);
+  }
+  .stage-head{display:flex;align-items:center;gap:18px;margin-bottom:4px;}
+  .stage-head h2{margin:0 0 3px;font-size:18px;font-weight:750;letter-spacing:-.005em;}
+  .stage-head .role{font-size:12.5px;color:var(--ink-soft);}
+  .tile{
+    flex:0 0 auto;width:72px;height:72px;border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg, color-mix(in srgb, var(--structure) 16%, var(--card)), color-mix(in srgb, var(--structure) 7%, var(--card)));
+  }
+  .blurb{font-size:13px;line-height:1.55;color:var(--ink-soft);margin:14px 0 0;max-width:62ch;}
+
+  /* ---------- curved connectors ---------- */
+  .link{display:flex;flex-direction:column;align-items:center;margin:4px 0;color:var(--ink-soft);}
+  .link svg{display:block;}
+  .link span{font-size:12px;text-align:center;max-width:320px;margin-top:2px;}
+
+  /* ---------- sheet hero ---------- */
+  .sheet-hero{display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .fan{position:relative;width:170px;height:122px;}
+  .fan .leaf{
+    position:absolute;top:4px;left:50%;width:108px;height:108px;
+    transform-origin:bottom center;border-radius:14px;
+    border:1.5px solid var(--line);box-shadow:0 4px 12px var(--shadow);
+  }
+  .fan .leaf .ln{position:absolute;left:14px;right:14px;height:3px;border-radius:2px;background:currentColor;opacity:.5;}
+  .leaf.l1{transform:translateX(-86px) rotate(-11deg);background:color-mix(in srgb, var(--structure) 14%, var(--card));color:var(--structure);}
+  .leaf.l2{transform:translateX(-54px) rotate(0deg);background:var(--card);color:var(--human);z-index:2;}
+  .leaf.l3{transform:translateX(-22px) rotate(11deg);background:color-mix(in srgb, var(--p-glm) 16%, var(--card));color:var(--p-glm);}
+  .tabs-row{display:flex;gap:10px;}
+  .tab-chip{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:11px;color:var(--ink-soft);text-align:center;width:118px;
+  }
+  .tab-chip .dot{width:9px;height:9px;border-radius:50%;}
+  .tab-chip b{color:var(--ink);font-size:12px;}
+  .tab-chip.t1 .dot{background:var(--structure);}
+  .tab-chip.t2 .dot{background:var(--human);}
+  .tab-chip.t3 .dot{background:var(--p-glm);}
+
+  /* ---------- orchestrator ---------- */
+  .hub-icon{width:36px;height:36px;}
+  .modes{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;}
+  .mode{
+    font-size:11px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    border:1px solid var(--structure);color:var(--structure);border-radius:20px;padding:4px 11px;
+  }
+  .loop-tag{
+    display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-soft);
+    margin-left:auto;border:1px dashed var(--line);border-radius:20px;padding:4px 10px;
+    white-space:nowrap;
+  }
+
+  /* ---------- providers fan ---------- */
+  .providers-stage .stage-head{margin-bottom:18px;}
+  .fanlines{width:100%;height:50px;display:block;}
+  .providers{display:flex;justify-content:space-between;gap:8px;}
+  .provider{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+  .provider .shape{width:52px;height:52px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 5px var(--shadow));}
+  .provider .org{font-size:9.5px;color:var(--ink-soft);}
+  .provider .name{font-size:11.5px;font-weight:750;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .provider.claude .name{color:var(--p-claude);}
+  .provider.gpt .name{color:var(--p-gpt);}
+  .provider.gemini .name{color:var(--p-gemini);}
+  .provider.glm .name{color:var(--p-glm);}
+  .provider.qwen .name{color:var(--p-qwen);}
+
+  /* ---------- judge ---------- */
+  .judge-icon{width:38px;height:38px;}
+  .tagchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;}
+  .tagchip{
+    font-size:11px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:700;
+    border-radius:7px;padding:4px 8px;color:#fff;
+  }
+
+  /* ---------- analysis ---------- */
+  .analysis-row{display:flex;gap:16px;width:100%;flex-wrap:wrap;}
+  .analysis-card{
+    flex:1 1 300px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;box-shadow:0 2px 10px var(--shadow);
+  }
+  .analysis-card .ahead{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .analysis-card h3{margin:0;font-size:14.5px;font-weight:750;}
+  .analysis-card .src{font-size:11px;color:var(--ink-soft);font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .analysis-card p{font-size:12px;line-height:1.55;color:var(--ink-soft);margin:0 0 12px;}
+  .chart-icon{flex:0 0 auto;width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--paper);}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:34px;}
+  .bars i{display:block;width:7px;border-radius:2px 2px 0 0;}
+  .pie{width:34px;height:34px;border-radius:50%;}
+  .out-path{font-size:11px;color:var(--ink-soft);}
+  .out-path .mono{color:var(--ink);}
+
+  footer{
+    margin-top:40px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--ink-soft);text-align:center;
+  }
+  footer .mono{color:var(--ink);}
+
+  @media (max-width:600px){
+    .providers{flex-wrap:wrap;}
+    .provider{flex:1 1 28%;}
+    .fanlines{display:none;}
+    .stage-head{flex-wrap:wrap;}
+    .loop-tag{margin-left:0;}
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">System diagram</div>
+  <h1>The stigma vignette pipeline</h1>
+  <p class="lede">
+    One Google Sheet, five AI respondents, one AI judge, and two analysis scripts that turn all of it
+    into charts — illustrated end to end.
+  </p>
+
+  <div class="flow">
+
+    <!-- SHEET HERO -->
+    <div class="sheet-hero">
+      <div class="fan">
+        <div class="leaf l1"><div class="ln" style="top:26px;"></div><div class="ln" style="top:40px;width:60%;left:14px;"></div></div>
+        <div class="leaf l3"><div class="ln" style="top:26px;"></div><div class="ln" style="top:40px;width:60%;left:14px;"></div></div>
+        <div class="leaf l2"><div class="ln" style="top:26px;"></div><div class="ln" style="top:40px;width:70%;left:14px;"></div><div class="ln" style="top:54px;width:45%;left:14px;"></div></div>
+      </div>
+      <div class="tabs-row">
+        <div class="tab-chip t1"><span class="dot"></span><b>Vignette Prep</b>crisis text + 5 raw responses</div>
+        <div class="tab-chip t2"><span class="dot"></span><b>Stigma Qs</b>6 survey scores × 5 models</div>
+        <div class="tab-chip t3"><span class="dot"></span><b>Tactics</b>tagged response sequences</div>
+      </div>
+    </div>
+
+    <div class="link">
+      <svg width="64" height="46" viewBox="0 0 64 46"><path d="M32 0 C32 18, 32 18, 32 40" stroke="var(--line)" stroke-width="2.2" fill="none"/><path d="M32 46 L25 36 L39 36 Z" fill="var(--line)"/></svg>
+      <span>script grabs the next vignette no model has answered yet</span>
+    </div>
+
+    <!-- ORCHESTRATOR -->
+    <div class="stage">
+      <div class="stage-head">
+        <div class="tile">
+          <svg class="hub-icon" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="5" fill="var(--structure)"/>
+            <circle cx="5" cy="31" r="3" fill="var(--structure-soft)"/>
+            <circle cx="15" cy="33" r="3" fill="var(--structure-soft)"/>
+            <circle cx="23" cy="33" r="3" fill="var(--structure-soft)"/>
+            <circle cx="33" cy="30" r="3" fill="var(--structure-soft)"/>
+            <line x1="18" y1="22" x2="6" y2="29" stroke="var(--structure-soft)" stroke-width="1.6"/>
+            <line x1="18" y1="22" x2="15" y2="30" stroke="var(--structure-soft)" stroke-width="1.6"/>
+            <line x1="18" y1="22" x2="22" y2="30" stroke="var(--structure-soft)" stroke-width="1.6"/>
+            <line x1="18" y1="22" x2="31" y2="28" stroke="var(--structure-soft)" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <div>
+          <h2>The orchestrator</h2>
+          <span class="role mono">claude_vignete_input_output_script.py</span>
+        </div>
+        <span class="loop-tag">↻ repeats per row</span>
+      </div>
+      <p class="blurb">Reads the vignette text, sends it to all five models, parses each answer, writes it into its own column — then moves on to the next unanswered row.</p>
+      <div class="modes">
+        <span class="mode">run_step1()</span>
+        <span class="mode">run_step2()</span>
+        <span class="mode">--redo-glm-qwen</span>
+      </div>
+    </div>
+
+    <div class="link">
+      <svg width="64" height="46" viewBox="0 0 64 46"><path d="M32 0 C32 18, 32 18, 32 40" stroke="var(--line)" stroke-width="2.2" fill="none"/><path d="M32 46 L25 36 L39 36 Z" fill="var(--line)"/></svg>
+      <span>the same prompt, sent to all five, independently</span>
+    </div>
+
+    <!-- PROVIDERS -->
+    <div class="stage providers-stage">
+      <div class="stage-head">
+        <h2 style="font-size:16px;">Five independent respondents</h2>
+      </div>
+      <svg class="fanlines" viewBox="0 0 700 50" preserveAspectRatio="none">
+        <line x1="350" y1="0" x2="55"  y2="50" stroke="var(--line)" stroke-width="2"/>
+        <line x1="350" y1="0" x2="200" y2="50" stroke="var(--line)" stroke-width="2"/>
+        <line x1="350" y1="0" x2="350" y2="50" stroke="var(--line)" stroke-width="2"/>
+        <line x1="350" y1="0" x2="500" y2="50" stroke="var(--line)" stroke-width="2"/>
+        <line x1="350" y1="0" x2="645" y2="50" stroke="var(--line)" stroke-width="2"/>
+      </svg>
+      <div class="providers">
+        <div class="provider claude">
+          <div class="shape"><svg width="46" height="46"><circle cx="23" cy="23" r="21" fill="var(--p-claude)"/></svg></div>
+          <div class="org">Anthropic</div><div class="name">claude-opus-4-8</div>
+        </div>
+        <div class="provider gpt">
+          <div class="shape"><svg width="46" height="46"><rect x="3" y="3" width="40" height="40" rx="9" fill="var(--p-gpt)"/></svg></div>
+          <div class="org">OpenAI</div><div class="name">gpt-4o</div>
+        </div>
+        <div class="provider gemini">
+          <div class="shape"><svg width="46" height="46"><polygon points="23,3 43,40 3,40" fill="var(--p-gemini)"/></svg></div>
+          <div class="org">Google</div><div class="name">gemini-2.5-flash</div>
+        </div>
+        <div class="provider glm">
+          <div class="shape"><svg width="46" height="46"><polygon points="23,2 44,23 23,44 2,23" fill="var(--p-glm)"/></svg></div>
+          <div class="org">Fireworks</div><div class="name">glm-5p3</div>
+        </div>
+        <div class="provider qwen">
+          <div class="shape"><svg width="46" height="46"><polygon points="23,3 40,13 40,33 23,43 6,33 6,13" fill="var(--p-qwen)"/></svg></div>
+          <div class="org">Fireworks</div><div class="name">qwen3p8-max</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="link">
+      <svg width="64" height="46" viewBox="0 0 64 46"><path d="M32 0 C32 18, 32 18, 32 40" stroke="var(--line)" stroke-width="2.2" fill="none"/><path d="M32 46 L25 36 L39 36 Z" fill="var(--line)"/></svg>
+      <span>those five answers get read back, phrase by phrase</span>
+    </div>
+
+    <!-- JUDGE -->
+    <div class="stage">
+      <div class="stage-head">
+        <div class="tile" style="background:linear-gradient(145deg, color-mix(in srgb, var(--human) 18%, var(--card)), color-mix(in srgb, var(--human) 7%, var(--card)));">
+          <svg class="judge-icon" viewBox="0 0 38 38" fill="none">
+            <line x1="19" y1="4" x2="19" y2="30" stroke="var(--human)" stroke-width="2.2"/>
+            <line x1="6" y1="11" x2="32" y2="11" stroke="var(--human)" stroke-width="2.2"/>
+            <path d="M6 11 L2 22 A6 4 0 0 0 10 22 Z" fill="var(--human)" opacity=".85"/>
+            <path d="M32 11 L28 22 A6 4 0 0 0 36 22 Z" fill="var(--human)" opacity=".85"/>
+            <line x1="12" y1="34" x2="26" y2="34" stroke="var(--human)" stroke-width="2.2"/>
+            <line x1="19" y1="30" x2="19" y2="34" stroke="var(--human)" stroke-width="2.2"/>
+          </svg>
+        </div>
+        <div>
+          <h2>The judge</h2>
+          <span class="role">claude-sonnet-5 — <span class="mono">tactic_analysis.py --tag</span></span>
+        </div>
+      </div>
+      <p class="blurb">
+        A sixth model, playing a different role: it doesn't answer the vignette, it grades the five
+        answers against a 12-tactic codebook (borrowed from a paper on "templatic" AI empathy),
+        then compresses each response into a short tag sequence and writes it to the third sheet tab.
+      </p>
+      <div class="tagchips">
+        <span class="tagchip" style="background:var(--p-claude);">E · feeling</span>
+        <span class="tagchip" style="background:var(--p-gpt);">V · validation</span>
+        <span class="tagchip" style="background:var(--p-gemini);">C · safety check</span>
+        <span class="tagchip" style="background:var(--p-glm);">R · resource</span>
+        <span class="tagchip" style="background:var(--p-qwen);">S · assistance</span>
+        <span class="tagchip" style="background:var(--ink-soft);">+ 7 more</span>
+      </div>
+    </div>
+
+    <div class="link">
+      <svg width="64" height="46" viewBox="0 0 64 46"><path d="M32 0 C32 18, 32 18, 32 40" stroke="var(--line)" stroke-width="2.2" fill="none"/><path d="M32 46 L25 36 L39 36 Z" fill="var(--line)"/></svg>
+      <span>everything collected so far, read once, turned into charts</span>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div class="analysis-row">
+      <div class="analysis-card">
+        <div class="ahead">
+          <div class="chart-icon">
+            <div class="bars">
+              <i style="height:40%;background:var(--p-claude);"></i>
+              <i style="height:70%;background:var(--p-gpt);"></i>
+              <i style="height:55%;background:var(--p-gemini);"></i>
+              <i style="height:90%;background:var(--p-glm);"></i>
+              <i style="height:30%;background:var(--p-qwen);"></i>
+            </div>
+          </div>
+          <div>
+            <h3>Stigma scoring</h3>
+            <div class="src">analysis.py</div>
+          </div>
+        </div>
+        <p>Do the five models score willingness differently? Kruskal–Wallis tests, inter-model
+        correlation, mean score by crisis type — rendered as bar charts, pooled and per crisis type.</p>
+        <div class="out-path">→ <span class="mono">~/Last Run/*.png</span></div>
+      </div>
+      <div class="analysis-card">
+        <div class="ahead">
+          <div class="chart-icon">
+            <div class="pie" style="background:conic-gradient(var(--p-claude) 0 28%, var(--p-gpt) 28% 50%, var(--p-gemini) 50% 70%, var(--p-glm) 70% 87%, var(--p-qwen) 87% 100%);"></div>
+          </div>
+          <div>
+            <h3>Tactics &amp; templates</h3>
+            <div class="src">tactic_analysis.py --analyze</div>
+          </div>
+        </div>
+        <p>How often does each model lean on which tactic — and does it keep reusing the same
+        structure? A regex search finds the shortest pattern that best covers each model's sequences.</p>
+        <div class="out-path">→ <span class="mono">~/Last Run/*.png</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Auth: <span class="mono">google_credentials.json</span> (service account) + 4 provider keys,
+    reused by the judge for <span class="mono">ANTHROPIC_API_KEY</span>.
+  </footer>
+</div>

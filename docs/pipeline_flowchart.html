@@ -1,0 +1,342 @@
+<title>How This Project Works</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --paper:#EEF0ED;
+    --ink:#1B2320;
+    --ink-soft:#4B5650;
+    --line:#CDD3C9;
+    --card:#F8F9F6;
+    --structure:#2F4A45;
+    --structure-soft:#3F5F59;
+    --human:#7A3242;
+    --shadow: rgba(27,35,32,.08);
+
+    --p-claude:#8B4A52;
+    --p-gpt:#4C7A6B;
+    --p-gemini:#4A6A8B;
+    --p-glm:#8B7A42;
+    --p-qwen:#70548B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#141713; --ink:#E7E9E2; --ink-soft:#A9B2A9; --line:#2B2F27; --card:#1A1E19;
+      --structure:#6FA399; --structure-soft:#5A8A80; --human:#C97B86;
+      --shadow: rgba(0,0,0,.35);
+      --p-claude:#C98B92; --p-gpt:#7FAE9D; --p-gemini:#7D9FC4; --p-glm:#C4AF6E; --p-qwen:#A787C4;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#141713; --ink:#E7E9E2; --ink-soft:#A9B2A9; --line:#2B2F27; --card:#1A1E19;
+    --structure:#6FA399; --structure-soft:#5A8A80; --human:#C97B86; --shadow: rgba(0,0,0,.35);
+    --p-claude:#C98B92; --p-gpt:#7FAE9D; --p-gemini:#7D9FC4; --p-glm:#C4AF6E; --p-qwen:#A787C4;
+  }
+  :root[data-theme="light"]{
+    --paper:#EEF0ED; --ink:#1B2320; --ink-soft:#4B5650; --line:#CDD3C9; --card:#F8F9F6;
+    --structure:#2F4A45; --structure-soft:#3F5F59; --human:#7A3242; --shadow: rgba(27,35,32,.08);
+    --p-claude:#8B4A52; --p-gpt:#4C7A6B; --p-gemini:#4A6A8B; --p-glm:#8B7A42; --p-qwen:#70548B;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:56px 24px 80px;}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+
+  .eyebrow{
+    font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--structure-soft);text-align:center;
+  }
+  h1{
+    font-size:clamp(26px,4vw,34px);
+    font-weight:750;letter-spacing:-.01em;
+    margin:8px 0 10px;text-align:center;text-wrap:balance;
+  }
+  .lede{
+    color:var(--ink-soft);font-size:15px;line-height:1.6;
+    max-width:56ch;margin:0 auto 52px;text-align:center;
+  }
+
+  .flow{display:flex;flex-direction:column;align-items:center;}
+
+  .step{
+    width:100%;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px 24px;
+    display:flex;
+    gap:18px;
+    align-items:flex-start;
+    box-shadow:0 1px 2px var(--shadow);
+  }
+  .step .icon{flex:0 0 auto;}
+  .step .num{
+    flex:0 0 28px;height:28px;border-radius:50%;
+    background:var(--structure);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;
+    margin-top:2px;
+  }
+  .step .body h3{
+    margin:0 0 5px;font-size:17px;font-weight:700;letter-spacing:-.005em;
+  }
+  .step .body p{
+    margin:0;font-size:13.5px;line-height:1.55;color:var(--ink-soft);
+  }
+  .step .icon-tile{
+    width:58px;height:58px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb, var(--structure) 12%, var(--card));
+    flex:0 0 58px;
+  }
+
+  .arrow{
+    display:flex;flex-direction:column;align-items:center;
+    gap:2px;margin:6px 0;color:var(--ink-soft);
+  }
+  .arrow svg{display:block;}
+  .arrow span{
+    font-size:11.5px;color:var(--ink-soft);text-align:center;max-width:280px;
+  }
+
+  /* fan row for the 5 models */
+  .fanwrap{width:100%;}
+  .fansvg{width:100%;height:46px;display:block;}
+  .models{
+    display:flex;justify-content:space-between;gap:10px;width:100%;
+  }
+  .model{
+    flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:8px;
+    text-align:center;
+  }
+  .model .shape{width:46px;height:46px;display:flex;align-items:center;justify-content:center;}
+  .model .org{font-size:10px;color:var(--ink-soft);}
+  .model .name{font-size:11.5px;font-weight:700;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .model.claude .name{color:var(--p-claude);}
+  .model.gpt .name{color:var(--p-gpt);}
+  .model.gemini .name{color:var(--p-gemini);}
+  .model.glm .name{color:var(--p-glm);}
+  .model.qwen .name{color:var(--p-qwen);}
+
+  .bubbles{display:flex;justify-content:space-between;gap:10px;width:100%;}
+  .bubbles .b{flex:1 1 0;display:flex;justify-content:center;}
+
+  .loopback{
+    margin-top:10px;
+    display:flex;align-items:center;gap:10px;
+    color:var(--ink-soft);font-size:12.5px;
+    background:var(--card);border:1px dashed var(--line);
+    border-radius:999px;padding:9px 18px;
+  }
+  .loopback svg{flex:0 0 auto;}
+
+  .why{
+    margin-top:46px;
+    border-top:1px solid var(--line);
+    padding-top:24px;
+  }
+  .why .eyebrow{text-align:left;}
+  .why h2{font-size:15px;margin:6px 0 8px;font-weight:700;}
+  .why p{font-size:13.5px;line-height:1.6;color:var(--ink-soft);margin:0;max-width:62ch;}
+
+  @media (max-width:560px){
+    .models{flex-wrap:wrap;}
+    .model{flex:1 1 30%;}
+    .fansvg{display:none;}
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">A two-minute tour</div>
+  <h1>How this project works</h1>
+  <p class="lede">
+    We keep a list of made-up crisis scenarios in a Google Sheet, then let a script ask five
+    different AI chatbots the same questions about each one — and write every answer back
+    side by side.
+  </p>
+
+  <div class="flow">
+
+    <!-- STEP 1: the sheet -->
+    <div class="step">
+      <div class="icon-tile">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <rect x="3" y="3" width="28" height="28" rx="4" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="3" y1="13" x2="31" y2="13" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="3" y1="22" x2="31" y2="22" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="13" y1="3" x2="13" y2="31" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="22" y1="3" x2="22" y2="31" stroke="var(--structure)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="num" style="align-self:center;">1</div>
+      <div class="body">
+        <h3>It all starts in a Google Sheet</h3>
+        <p>Every row is one scenario — a short, made-up description of someone in a mental-health
+        crisis (feeling suicidal, being abused, losing a home, feeling alone...). 140 of them, so far.</p>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="2" height="30" viewBox="0 0 2 30"><line x1="1" y1="0" x2="1" y2="24" stroke="var(--line)" stroke-width="2"/><path d="M1 30 L-4 22 L6 22 Z" fill="var(--line)"/></svg>
+      <span>the script picks the next scenario that hasn't been asked yet</span>
+    </div>
+
+    <!-- STEP 2: read vignette -->
+    <div class="step">
+      <div class="icon-tile">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <rect x="7" y="3" width="20" height="26" rx="2.5" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="11" y1="10" x2="23" y2="10" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="11" y1="15" x2="23" y2="15" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="11" y1="20" x2="18" y2="20" stroke="var(--structure)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="num" style="align-self:center;">2</div>
+      <div class="body">
+        <h3>The script grabs that scenario's text</h3>
+        <p>Just the plain description — no hints about which AI model is being tested, or how.</p>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="2" height="30" viewBox="0 0 2 30"><line x1="1" y1="0" x2="1" y2="24" stroke="var(--line)" stroke-width="2"/><path d="M1 30 L-4 22 L6 22 Z" fill="var(--line)"/></svg>
+      <span>the same text and question go out to five AI models at once</span>
+    </div>
+
+    <!-- STEP 3: fan out to 5 models -->
+    <div class="step" style="flex-direction:column;">
+      <div style="display:flex;gap:18px;align-items:flex-start;width:100%;">
+        <div class="icon-tile" style="background:transparent;">
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <circle cx="17" cy="17" r="4" fill="var(--structure)"/>
+            <circle cx="5" cy="30" r="2.5" fill="var(--line)"/>
+            <circle cx="14" cy="31" r="2.5" fill="var(--line)"/>
+            <circle cx="20" cy="31" r="2.5" fill="var(--line)"/>
+            <circle cx="29" cy="30" r="2.5" fill="var(--line)"/>
+            <line x1="17" y1="20" x2="5" y2="28" stroke="var(--line)" stroke-width="1.6"/>
+            <line x1="17" y1="20" x2="14" y2="29" stroke="var(--line)" stroke-width="1.6"/>
+            <line x1="17" y1="20" x2="20" y2="29" stroke="var(--line)" stroke-width="1.6"/>
+            <line x1="17" y1="20" x2="29" y2="28" stroke="var(--line)" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <div class="num" style="align-self:center;">3</div>
+        <div class="body">
+          <h3>Five AI models answer, independently</h3>
+          <p>Claude and GPT-4o from the big labs, Gemini from Google, plus two open-source models
+          (GLM &amp; Qwen) — each one sees the scenario on its own, with no idea what the others said.</p>
+        </div>
+      </div>
+
+      <div class="fanwrap">
+        <svg class="fansvg" viewBox="0 0 600 46" preserveAspectRatio="none">
+          <line x1="300" y1="0" x2="46"  y2="46" stroke="var(--line)" stroke-width="2"/>
+          <line x1="300" y1="0" x2="173" y2="46" stroke="var(--line)" stroke-width="2"/>
+          <line x1="300" y1="0" x2="300" y2="46" stroke="var(--line)" stroke-width="2"/>
+          <line x1="300" y1="0" x2="427" y2="46" stroke="var(--line)" stroke-width="2"/>
+          <line x1="300" y1="0" x2="554" y2="46" stroke="var(--line)" stroke-width="2"/>
+        </svg>
+        <div class="models">
+          <div class="model claude">
+            <div class="shape"><svg width="40" height="40"><circle cx="20" cy="20" r="18" fill="var(--p-claude)"/></svg></div>
+            <div class="org">Anthropic</div><div class="name">Claude</div>
+          </div>
+          <div class="model gpt">
+            <div class="shape"><svg width="40" height="40"><rect x="4" y="4" width="32" height="32" rx="7" fill="var(--p-gpt)"/></svg></div>
+            <div class="org">OpenAI</div><div class="name">GPT-4o</div>
+          </div>
+          <div class="model gemini">
+            <div class="shape"><svg width="40" height="40"><polygon points="20,3 37,34 3,34" fill="var(--p-gemini)"/></svg></div>
+            <div class="org">Google</div><div class="name">Gemini</div>
+          </div>
+          <div class="model glm">
+            <div class="shape"><svg width="40" height="40"><polygon points="20,2 38,20 20,38 2,20" fill="var(--p-glm)"/></svg></div>
+            <div class="org">Fireworks</div><div class="name">GLM</div>
+          </div>
+          <div class="model qwen">
+            <div class="shape"><svg width="40" height="40"><polygon points="20,3 35,11 35,29 20,37 5,29 5,11" fill="var(--p-qwen)"/></svg></div>
+            <div class="org">Fireworks</div><div class="name">Qwen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="2" height="30" viewBox="0 0 2 30"><line x1="1" y1="0" x2="1" y2="24" stroke="var(--line)" stroke-width="2"/><path d="M1 30 L-4 22 L6 22 Z" fill="var(--line)"/></svg>
+      <span>each model sends back its own answer</span>
+    </div>
+
+    <!-- STEP 4: responses come back -->
+    <div class="step" style="flex-direction:column;">
+      <div style="display:flex;gap:18px;align-items:flex-start;width:100%;">
+        <div class="icon-tile">
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <path d="M4 6 H30 A2 2 0 0 1 32 8 V20 A2 2 0 0 1 30 22 H14 L8 29 V22 H4 A2 2 0 0 1 2 20 V8 A2 2 0 0 1 4 6 Z" stroke="var(--structure)" stroke-width="2" fill="none"/>
+            <line x1="8" y1="12" x2="26" y2="12" stroke="var(--structure)" stroke-width="1.8"/>
+            <line x1="8" y1="17" x2="20" y2="17" stroke="var(--structure)" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div class="num" style="align-self:center;">4</div>
+        <div class="body">
+          <h3>Two kinds of answers come back</h3>
+          <p>A free-form response to the scenario itself, and — for a separate set of survey
+          questions — a 1–5 "how willing would you be to..." score plus a one-sentence reason.</p>
+        </div>
+      </div>
+      <div class="bubbles">
+        <div class="b"><svg width="30" height="22"><path d="M2 2 H28 A2 2 0 0 1 28 4 V14 A2 2 0 0 1 26 16 H10 L5 20 V16 H2 A2 2 0 0 1 0 14 V4 A2 2 0 0 1 2 2 Z" fill="var(--p-claude)" opacity=".35"/></svg></div>
+        <div class="b"><svg width="30" height="22"><path d="M2 2 H28 A2 2 0 0 1 28 4 V14 A2 2 0 0 1 26 16 H10 L5 20 V16 H2 A2 2 0 0 1 0 14 V4 A2 2 0 0 1 2 2 Z" fill="var(--p-gpt)" opacity=".35"/></svg></div>
+        <div class="b"><svg width="30" height="22"><path d="M2 2 H28 A2 2 0 0 1 28 4 V14 A2 2 0 0 1 26 16 H10 L5 20 V16 H2 A2 2 0 0 1 0 14 V4 A2 2 0 0 1 2 2 Z" fill="var(--p-gemini)" opacity=".35"/></svg></div>
+        <div class="b"><svg width="30" height="22"><path d="M2 2 H28 A2 2 0 0 1 28 4 V14 A2 2 0 0 1 26 16 H10 L5 20 V16 H2 A2 2 0 0 1 0 14 V4 A2 2 0 0 1 2 2 Z" fill="var(--p-glm)" opacity=".35"/></svg></div>
+        <div class="b"><svg width="30" height="22"><path d="M2 2 H28 A2 2 0 0 1 28 4 V14 A2 2 0 0 1 26 16 H10 L5 20 V16 H2 A2 2 0 0 1 0 14 V4 A2 2 0 0 1 2 2 Z" fill="var(--p-qwen)" opacity=".35"/></svg></div>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="2" height="30" viewBox="0 0 2 30"><line x1="1" y1="0" x2="1" y2="24" stroke="var(--line)" stroke-width="2"/><path d="M1 30 L-4 22 L6 22 Z" fill="var(--line)"/></svg>
+      <span>every answer gets its own column, next to the scenario it belongs to</span>
+    </div>
+
+    <!-- STEP 5: write back -->
+    <div class="step">
+      <div class="icon-tile">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <rect x="3" y="3" width="28" height="28" rx="4" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="3" y1="13" x2="31" y2="13" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="13" y1="13" x2="13" y2="31" stroke="var(--structure)" stroke-width="2"/>
+          <line x1="22" y1="13" x2="22" y2="31" stroke="var(--structure)" stroke-width="2"/>
+          <path d="M24 24 L29 19 L31.5 21.5 L26.5 26.5 L23.5 27 Z" fill="var(--human)"/>
+        </svg>
+      </div>
+      <div class="num" style="align-self:center;">5</div>
+      <div class="body">
+        <h3>The sheet fills back in, row by row</h3>
+        <p>Open the sheet and that row now shows five models' answers side by side, ready to compare.</p>
+      </div>
+    </div>
+
+    <div class="loopback">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M15 4 A7 7 0 1 0 15.8 11" stroke="var(--structure-soft)" stroke-width="1.8" fill="none"/>
+        <path d="M15.8 11 L16.6 7.2 L12.8 8.6 Z" fill="var(--structure-soft)"/>
+      </svg>
+      repeats automatically until every scenario has been asked
+    </div>
+
+  </div>
+
+  <div class="why">
+    <div class="eyebrow">Why bother</div>
+    <h2>What we're actually trying to learn</h2>
+    <p>
+      Whether AI chatbots show the same kind of stigma toward mental-health crises that humans
+      sometimes do — would a model rather not work with, befriend, or live next to someone described
+      this way? — and whether that differs across models and crisis types.
+    </p>
+  </div>
+</div>

@@ -25,8 +25,8 @@ MODEL_LABELS = {
     "Claude": "claude-opus-4-8",
     "GPT": "gpt-4o",
     "Gemini": "gemini-2.5-flash",
-    "GLM": "GLM 5.2",
-    "Qwen": "Qwen 3.7",
+    "GLM": "GLM 5.3",
+    "Qwen": "Qwen 3.8",
 }
 QUESTIONS = [
     "Q1 - Work closely",
@@ -36,7 +36,7 @@ QUESTIONS = [
     "Q5 - Marry into family",
     "Q6 - Violence likelihood",
 ]
-CRISIS_TYPES = ["Suicidal", "Anxiety/Panic Attack", "Physical Abuse", "Homelessness/Poverty", "Loneliness"]
+CRISIS_TYPES = ["Suicidal", "Anxiety/Panic Attack", "Physical Abuse", "Homelessness/Poverty", "Loneliness", "Psychosis / Delusional Thinking", "Homicide"]
 
 # Score columns per question (0-indexed): Claude, GPT, Gemini, GLM, Qwen
 # Each question block is 10 cols wide; score cols are at offsets 2,4,6,8,10

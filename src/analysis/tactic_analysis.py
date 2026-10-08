@@ -36,10 +36,15 @@ MODEL_LABELS = {
     "Claude": "claude-opus-4-8",
     "GPT": "gpt-4o",
     "Gemini": "gemini-2.5-flash",
-    "GLM": "GLM 5.2",
-    "Qwen": "Qwen 3.7",
+    "GLM": "GLM 5.3",
+    "Qwen": "Qwen 3.8",
 }
+# Where responses live in the "Tactics" tab (unshifted -- that tab never had the 7 crisis-tag
+# columns inserted into it, so its layout still matches the original H-L response columns).
 RESPONSE_COLS = {"Claude": 7, "GPT": 8, "Gemini": 9, "GLM": 10, "Qwen": 11}  # 0-indexed
+# Where responses actually live in "Vignette Prep & Appropriateness" now (shifted +2 to J-N
+# after 7 crisis-tag columns were inserted there; see claude_vignete_input_output_script.py fix).
+PREP_RESPONSE_COLS = {"Claude": 9, "GPT": 10, "Gemini": 11, "GLM": 12, "Qwen": 13}  # 0-indexed
 
 TAGGER_MODEL = "claude-sonnet-5"
 
@@ -222,7 +227,7 @@ def load_vignette_responses():
         vignette = row[1].strip() if len(row) > 1 else ""
         if not vignette:
             continue
-        for model, col in RESPONSE_COLS.items():
+        for model, col in PREP_RESPONSE_COLS.items():
             response_text = row[col].strip() if len(row) > col else ""
             if response_text:
                 items.append({"vignette_id": i, "vignette": vignette, "model": model, "response": response_text})
@@ -336,7 +341,7 @@ def sequences_by_model(sequences):
     return grouped
 
 
-CRISIS_TYPES = ["Suicidal", "Anxiety/Panic Attack", "Physical Abuse", "Homelessness/Poverty", "Loneliness"]
+CRISIS_TYPES = ["Suicidal", "Anxiety/Panic Attack", "Physical Abuse", "Homelessness/Poverty", "Loneliness", "Psychosis / Delusional Thinking", "Homicide"]
 
 
 def load_crisis_types():

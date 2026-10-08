@@ -14,6 +14,12 @@ crisis vignettes, along two axes:
    Safety Check), then checked for how templated/repetitive each model's
    sequence of tactics is.
 
+Crisis types covered: suicidal ideation, anxiety/panic attack, physical abuse,
+homelessness/poverty, loneliness, psychosis/delusional thinking, and homicide.
+
+See `docs/pipeline_architecture.html` and `docs/pipeline_flowchart.html` for
+visual walkthroughs of how the pipeline fits together.
+
 ## Pipeline
 
 Data lives in a Google Sheet with three tabs: `Vignette Prep & Appropriateness`,
