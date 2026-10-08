@@ -1,4 +1,4 @@
-# AIMH — AI Mental Health Stigma & Tactic Analysis
+# AIMH — AI Crisis Stigma & Tactic Analysis
 
 Compares how 5 LLMs (Claude, GPT-4o, Gemini, GLM, Qwen) respond to mental-health
 crisis vignettes, along two axes:
